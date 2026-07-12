@@ -480,35 +480,43 @@ async function persistDemoTasks(){ await storageAdapter.set('demo:tasks', JSON.s
 async function persistDemoCategories(){ await storageAdapter.set('demo:categories', JSON.stringify(state.categories)); }
 
 async function apiCall(action, payload, method){
-  try{
-    let res;
 
-    if(method === 'GET'){
-      res = await fetch(state.apiUrl + '?action=' + encodeURIComponent(action));
-    }else{
-      const form = new URLSearchParams();
-form.append("action", action);
-form.append("payload", JSON.stringify(payload));
-      res = await fetch(state.apiUrl,{
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify({action,payload})
-      });
+    try{
+
+        let res;
+
+        if(method==="GET"){
+
+            res = await fetch(
+                state.apiUrl +
+                "?action=" +
+                encodeURIComponent(action)
+            );
+
+        }else{
+
+            const form = new URLSearchParams();
+
+            form.append("action",action);
+            form.append("payload",JSON.stringify(payload||{}));
+
+            res = await fetch(state.apiUrl,{
+                method:"POST",
+                body:form
+            });
+
+        }
+
+        return await res.json();
+
+    }catch(e){
+
+        console.error("API ERROR",e);
+
+        return null;
+
     }
 
-    console.log("HTTP", res.status);
-
-    const text = await res.text();
-    console.log("Response =", text);
-
-    return JSON.parse(text);
-
-  }catch(e){
-    console.error("API ERROR", e);
-    return null;
-  }
 }
 
 async function loadAllData(){
@@ -516,7 +524,24 @@ async function loadAllData(){
   if(state.apiUrl){
     const data = await apiCall('getAll', null, 'GET');
     if(data && data.tasks){
-      state.tasks = data.tasks.map(t => ({...t, completed: t.completed === true || t.completed === 'TRUE' || t.completed === 'true'}));
+      
+      state.tasks = data.tasks.map(t=>({
+
+    ...t,
+
+    dueDate: t.dueDate
+        ? new Date(t.dueDate)
+            .toISOString()
+            .substring(0,10)
+        : "",
+
+    completed:
+        t.completed===true ||
+        t.completed==="TRUE" ||
+        t.completed==="true"
+
+}));
+      
       state.categories = data.categories || [];
       state.connected = true;
     }else{
