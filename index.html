@@ -354,6 +354,7 @@
 <div id="toast-root"></div>
 
 <script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbxxDKkhPRizOtCnXaOjx6MZhUwTwacdAfKfSES5AekSOs2jaP6xj3WWkp-c9DbQPYEy6A/exec";
 /* ============================================================
    ICONS
 ============================================================ */
@@ -421,8 +422,7 @@ const state = {
 ============================================================ */
 const hasClaudeStorage = (typeof window !== 'undefined' && !!window.storage && typeof window.storage.get === 'function');
   
-const API_URL = "https://script.google.com/macros/s/AKfycbxxDKkhPRizOtCnXaOjx6MZhUwTwacdAfKfSES5AekSOs2jaP6xj3WWkp-c9DbQPYEy6A/exec";
-  
+
 const storageAdapter = {
   async get(key){
     if(hasClaudeStorage){
@@ -954,28 +954,28 @@ function renderSettingsPage(){
     </div>
 
     <div class="card">
-      <div class="section-title">${ICONS.cloud} เชื่อมต่อ Google Sheets</div>
-      <div class="section-desc">วาง URL ของ Google Apps Script Web App ที่ deploy ไว้ เพื่อให้ข้อมูลถูกบันทึกลง Google Sheets จริง</div>
-      <div class="conn-status">
-        <span class="conn-dot ${state.connected?'on':'off'}"></span>
-        ${state.connected ? 'เชื่อมต่อ Google Sheets สำเร็จ' : (state.apiUrl ? 'เชื่อมต่อไม่สำเร็จ กำลังใช้โหมดทดลอง (ข้อมูลเก็บในเบราว์เซอร์)' : 'ยังไม่ได้เชื่อมต่อ กำลังใช้โหมดทดลอง (ข้อมูลเก็บในเบราว์เซอร์)')}
-      </div>
-      <div class="form-row">
-        <label>Google Apps Script Web App URL</label>
-        <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/AKfycbxxDKkhPRizOtCnXaOjx6MZhUwTwacdAfKfSES5AekSOs2jaP6xj3WWkp-c9DbQPYEy6A/exec" value="${escapeHtml(state.apiUrl||'')}">
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-primary" id="save-api-url">บันทึกและเชื่อมต่อ</button>
-        ${state.apiUrl ? `<button class="btn btn-light" id="clear-api-url">ยกเลิกการเชื่อมต่อ</button>`:''}
-      </div>
-      <div class="setup-steps">
-        <b>วิธีตั้งค่า:</b><br>
-        1. เปิดไฟล์ <b>GoogleAppsScript_Code.gs</b> ที่ให้ไว้<br>
-        2. สร้าง Google Sheet ใหม่ → เมนู ส่วนขยาย → Apps Script<br>
-        3. วางโค้ดทั้งหมด แล้วกด Deploy → New deployment → Web app (Execute as: Me, Access: Anyone)<br>
-        4. คัดลอก URL ที่ได้มาวางในช่องด้านบน แล้วกด "บันทึกและเชื่อมต่อ"
-      </div>
-    </div>
+  <div class="section-title">
+    ${ICONS.cloud} Google Sheets
+  </div>
+
+  <div class="section-desc">
+    ระบบเชื่อมต่อ Google Sheets อัตโนมัติ
+  </div>
+
+  <div class="conn-status">
+    <span class="conn-dot ${state.connected ? 'on' : 'off'}"></span>
+    ${
+      state.connected
+        ? '🟢 เชื่อมต่อ Google Sheets สำเร็จ'
+        : '🔴 ไม่สามารถเชื่อมต่อ Google Sheets'
+    }
+  </div>
+
+  <div class="setup-steps">
+    <b>สถานะระบบ</b><br>
+    ข้อมูลทั้งหมดจะถูกบันทึกลง Google Sheets โดยอัตโนมัติ
+  </div>
+</div>
   </div>`;
 }
 
