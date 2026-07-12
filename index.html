@@ -372,6 +372,32 @@ function fmtThaiDate(iso){
 }
 function uid(){ return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
 
+/* ---------- Recurrence helpers ---------- */
+const WEEKDAY_LABEL = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+const WEEKDAY_SHORT = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+function weekdaysArr(t){ return String(t.weekdays||'').split(',').filter(v=>v!=='').map(Number); }
+function taskOccursOnDate(t, iso){
+  if(!iso) return false;
+  if(t.repeat === 'daily'){
+    return !t.dueDate || iso >= t.dueDate;
+  }
+  if(t.repeat === 'weekly'){
+    if(t.dueDate && iso < t.dueDate) return false;
+    const dow = fromISODate(iso).getDay();
+    return weekdaysArr(t).includes(dow);
+  }
+  return t.dueDate === iso;
+}
+function repeatLabel(t){
+  if(t.repeat==='daily') return '🔁 ทุกวัน';
+  if(t.repeat==='weekly'){
+    const days = weekdaysArr(t).sort();
+    if(days.length===0) return '🔁 รายสัปดาห์';
+    return '🔁 ทุก' + days.map(d=>WEEKDAY_SHORT[d]).join(',');
+  }
+  return '';
+}
+
 /* ============================================================
    STATE
 ============================================================ */
@@ -587,7 +613,7 @@ async function toggleTaskData(id){
 
       t.completed = res.completed;
 
-      if(t.repeat === 'daily'){
+      if(t.repeat === 'daily' || t.repeat === 'weekly'){
         t.lastCompleted = res.lastCompleted || '';
       }
 
@@ -755,7 +781,7 @@ function renderTopbar(){
 ============================================================ */
 function renderDashboard(){
   const todayISO = toISODate(new Date());
-  const todayTasks = state.tasks.filter(t=>t.dueDate===todayISO);
+  const todayTasks = state.tasks.filter(t=>taskOccursOnDate(t, todayISO));
   const pendingToday = todayTasks.filter(t=>!t.completed).length;
   const pendingAll = state.tasks.filter(t=>!t.completed).length;
   const doneAll = state.tasks.filter(t=>t.completed).length;
@@ -796,12 +822,13 @@ function renderCalendarCard(){
 
   const cellsHtml = cells.map(c=>{
     if(c.out) return `<div class="cal-cell out"><div class="cal-daynum">${c.d}</div></div>`;
-    const dayTasks = state.tasks.filter(t=>t.dueDate===c.iso);
+    const dayTasks = state.tasks.filter(t=>taskOccursOnDate(t, c.iso));
     const isToday = c.iso === todayISO;
     const isSel = c.iso === state.selectedDate;
     const chips = dayTasks.slice(0,2).map(t=>{
       const color = catColor(t.category);
-      return `<div class="cal-chip" style="background:${color}22;color:${color};">${escapeHtml(t.title)}</div>`;
+      const rep = t.repeat && t.repeat!=='none' ? '🔁 ' : '';
+      return `<div class="cal-chip" style="background:${color}22;color:${color};">${rep}${escapeHtml(t.title)}</div>`;
     }).join('');
     const more = dayTasks.length>2 ? `<div class="cal-more">+${dayTasks.length-2} รายการ</div>` : '';
     return `<div class="cal-cell ${isToday?'today':''} ${isSel?'selected':''}" data-date="${c.iso}">
@@ -830,7 +857,7 @@ function renderCalendarCard(){
 }
 
 function renderTodayPanel(){
-  const dayTasks = state.tasks.filter(t=>t.dueDate===state.selectedDate).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+  const dayTasks = state.tasks.filter(t=>taskOccursOnDate(t, state.selectedDate)).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
   const d = fromISODate(state.selectedDate);
   const label = `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
   return `
@@ -845,7 +872,7 @@ function renderTodayPanel(){
         <div class="todo-item ${t.completed?'done':''}">
           <div class="todo-check ${t.completed?'checked':''}" data-toggle="${t.id}">${t.completed?ICONS.check:''}</div>
           <div style="flex:1;min-width:0;">
-            <div class="todo-title">${escapeHtml(t.title)}${t.repeat==='daily'?'<span class="repeat-badge">🔁 ทุกวัน</span>':''}</div>
+            <div class="todo-title">${escapeHtml(t.title)}${t.repeat && t.repeat!=='none' ? `<span class="repeat-badge">${repeatLabel(t)}</span>`:''}</div>
             <div class="todo-meta">
               ${t.startTime ? `<span class="todo-time">${ICONS.clock} ${t.startTime}${t.endTime?' - '+t.endTime:''}</span>`:''}
               <span class="cat-pill" style="background:${catColor(t.category)}22;color:${catColor(t.category)};">${escapeHtml(catName(t.category))}</span>
@@ -862,7 +889,7 @@ function renderTodayPanel(){
 function getFilteredTasks(){
   let list = [...state.tasks];
   const f = state.tf;
-  if(f.date) list = list.filter(t=>t.dueDate===f.date);
+  if(f.date) list = list.filter(t=>taskOccursOnDate(t, f.date));
   if(f.status==='pending') list = list.filter(t=>!t.completed);
   if(f.status==='done') list = list.filter(t=>t.completed);
   if(f.priority!=='all') list = list.filter(t=>t.priority===f.priority);
@@ -921,8 +948,8 @@ function renderTasksPage(){
            <td class="task-title-cell">
   <div style="font-weight:600;">
     ${escapeHtml(t.title)}
-    ${t.repeat === 'daily'
-      ? '<span class="repeat-badge">🔁 ทุกวัน</span>'
+    ${t.repeat && t.repeat !== 'none'
+      ? `<span class="repeat-badge">${repeatLabel(t)}</span>`
       : ''}
   </div>
 
@@ -1010,9 +1037,10 @@ function openTaskModal(task){
     endTime: '',
     priority: 'medium',
     category: state.categories[0]?.id || '',
-    repeat: 'none',          // เพิ่ม
-    completed: false,        // แนะนำให้มี
-    lastCompleted: ''        // แนะนำให้มี
+    repeat: 'none',           // เพิ่ม
+    weekdays: '',             // เพิ่ม (สำหรับทำซ้ำรายสัปดาห์)
+    completed: false,         // แนะนำให้มี
+    lastCompleted: ''         // แนะนำให้มี
   };
 
   renderTaskModal();
@@ -1056,8 +1084,19 @@ function renderTaskModal(){
           <label>การทำซ้ำ</label>
           <select id="m-repeat">
             <option value="none" ${t.repeat==='none'?'selected':''}>ไม่ทำซ้ำ</option>
-            <option value="daily" ${t.repeat==='daily'?'selected':''}>ทุกวัน</option>
+            <option value="daily" ${t.repeat==='daily'?'selected':''}>ทำทุกวัน</option>
+            <option value="weekly" ${t.repeat==='weekly'?'selected':''}>ทำทุกสัปดาห์ (เลือกวัน)</option>
           </select>
+        </div>
+        <div class="field" id="m-weekdays-field" style="display:${t.repeat==='weekly'?'block':'none'};">
+          <label>เลือกวันที่ทำซ้ำ</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${WEEKDAY_LABEL.map((label,i)=>`
+              <label style="display:flex;align-items:center;gap:5px;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;">
+                <input type="checkbox" class="m-weekday-cb" value="${i}" ${weekdaysArr(t).includes(i)?'checked':''} style="width:14px;height:14px;">
+                ${WEEKDAY_SHORT[i]}
+              </label>`).join('')}
+          </div>
         </div>
         <div class="field">
           <label>ระดับความเร่งด่วน <span class="req">*</span></label>
@@ -1079,11 +1118,17 @@ function renderTaskModal(){
   root.querySelectorAll('.prio-btn').forEach(b=>{
     b.onclick = ()=>{ state.editingTask.priority = b.dataset.p; renderTaskModal(); };
   });
+  const repeatSel = document.getElementById('m-repeat');
+  const weekdaysField = document.getElementById('m-weekdays-field');
+  repeatSel.onchange = ()=>{ weekdaysField.style.display = repeatSel.value==='weekly' ? 'block' : 'none'; };
   document.getElementById('save-task').onclick = async ()=>{
     const title = document.getElementById('m-title').value.trim();
     const dueDate = document.getElementById('m-date').value;
     if(!title){ showToast('กรุณากรอกชื่องาน','error'); return; }
     if(!dueDate){ showToast('กรุณาเลือกวันที่ครบกำหนด','error'); return; }
+    const repeat = document.getElementById('m-repeat').value;
+    const selectedWeekdays = Array.from(document.querySelectorAll('.m-weekday-cb:checked')).map(cb=>cb.value);
+    if(repeat==='weekly' && selectedWeekdays.length===0){ showToast('กรุณาเลือกวันที่ต้องการทำซ้ำอย่างน้อย 1 วัน','error'); return; }
     const payload = {
   ...t,
   title,
@@ -1093,7 +1138,8 @@ function renderTaskModal(){
   endTime: document.getElementById('m-end').value,
   category: document.getElementById('m-category').value,
   priority: state.editingTask.priority,
-  repeat: document.getElementById('m-repeat').value,
+  repeat: repeat,
+  weekdays: repeat==='weekly' ? selectedWeekdays.join(',') : '',
 };
     closeModal();
     if(isEdit) await updateTaskData(payload); else await createTask(payload);
