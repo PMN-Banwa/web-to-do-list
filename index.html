@@ -90,26 +90,30 @@ body{
     flex-shrink:0;
   }
   .brand-text{line-height:1.25;}
-  .brand-text .t1{color:#fff;font-weight:700;font-size:14.5px;}
-  .brand-text .t2{color:#cbd5e1;font-size:11px;letter-spacing:.04em;}
+  .brand-text .t1{color:#ffffff;font-weight:700;font-size:14.5px;}
+  .brand-text .t2{color:#ffffff;font-size:11px;letter-spacing:.04em;}
   .nav-item{
     display:flex;align-items:center;gap:10px;
     padding:11px 12px;border-radius:10px;
-    color:#d1d5db;
+    color:#ffffff;
     font-size:14px;
     font-weight:600;
     cursor:pointer;border:none;background:none;width:100%;text-align:left;
     transition:background .15s, color .15s;
   }
-  .nav-item svg{flex-shrink:0;opacity:.85;}
+  .nav-item svg{
+    color:#ffffff;
+    flex-shrink:0;
+    opacity:.85;
+  }
   .nav-item:hover{
     background:rgba(59,130,246,.18);
-    color:#fff;
+    color:#ffffff;
   }
   
   .nav-item.active{
     background:linear-gradient(90deg,#2563eb,#3b82f6);
-    color:#fff;
+    color:#ffffff;
     box-shadow:0 8px 20px rgba(37,99,235,.35);
 }
   
@@ -772,8 +776,7 @@ function renderSidebar(){
       <button class="nav-item ${state.view===it.key?'active':''}" data-nav="${it.key}">
         ${it.icon} ${it.label}
       </button>`).join('')}
-    // <div class="sidebar-spacer"></div>
-    // <button class="upgrade-btn" id="upgrade-btn">Upgrade Pro Version</button>
+   
   </aside>`;
 }
 
