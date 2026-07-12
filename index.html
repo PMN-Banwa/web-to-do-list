@@ -55,15 +55,16 @@ body{
 
   @media (max-width:760px){
 
-  .sidebar{
-      position:fixed;
-      top:0;
-      left:-270px;
-      width:270px;
-      height:100vh;
-      z-index:1000;
-      transition:left .25s ease;
-  }
+  /* ---------- Sidebar ---------- */
+.sidebar{
+    width:270px;
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    background:#0f172a;
+    color:#fff;
+    border-right:1px solid rgba(255,255,255,.08);
+}
 
   .sidebar.open{
       left:0;
@@ -90,40 +91,57 @@ body{
     flex-shrink:0;
   }
   .brand-text{line-height:1.25;}
-  .brand-text .t1{color:#ffffff;font-weight:700;font-size:14.5px;}
-  .brand-text .t2{color:#ffffff;font-size:11px;letter-spacing:.04em;}
+  .brand-text .t1{
+    color:#fff !important;
+    font-weight:700;
+    font-size:14.5px;
+}
+
+.brand-text .t2{
+    color:#cbd5e1 !important;
+    font-size:11px;
+    letter-spacing:.04em;
+}
   .nav-item{
-    display:flex;align-items:center;gap:10px;
-    padding:11px 12px;border-radius:10px;
-    color:#ffffff;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    padding:11px 12px;
+    border:none;
+    border-radius:10px;
+    background:none;
+    cursor:pointer;
+    text-align:left;
+    color:#fff !important;
     font-size:14px;
     font-weight:600;
-    cursor:pointer;border:none;background:none;width:100%;text-align:left;
-    transition:background .15s, color .15s;
-  }
+    transition:.2s;
+}
   .nav-item svg{
-    color:#ffffff;
+    color:#fff !important;
+    fill:currentColor;
+    stroke:currentColor;
     flex-shrink:0;
-    opacity:.85;
-  }
+    opacity:1;
+}
   .nav-item:hover{
     background:rgba(59,130,246,.18);
-    color:#ffffff;
-  }
+    color:#fff !important;
+}
   
-  .nav-item.active{
+ .nav-item.active{
     background:linear-gradient(90deg,#2563eb,#3b82f6);
-    color:#ffffff;
+    color:#fff !important;
     box-shadow:0 8px 20px rgba(37,99,235,.35);
+}
+
+.nav-item.active svg{
+    color:#fff !important;
 }
   
   .sidebar-spacer{flex:1;}
-  .upgrade-btn{
-    background:linear-gradient(135deg,var(--blue),#6366f1);
-    color:#fff;border:none;border-radius:10px;
-    padding:12px;font-size:13px;font-weight:600;cursor:pointer;
-    width:100%;
-  }
+  
 
   /* ---------- Main ---------- */
   .main{
