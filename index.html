@@ -442,12 +442,10 @@ const storageAdapter = {
 };
 
 async function loadConfig(){
-  const r = await storageAdapter.get('config:apiUrl');
-  state.apiUrl = r ? r.value : null;
+    state.apiUrl = API_URL;
 }
 async function saveConfig(url){
-  state.apiUrl = url || null;
-  await storageAdapter.set('config:apiUrl', state.apiUrl || '');
+    state.apiUrl = API_URL;
 }
 
 async function loadDemo(){
@@ -1186,20 +1184,7 @@ function attachEvents(){
     };
   });
 
-  // settings: api url
-  const saveUrl = document.getElementById('save-api-url');
-  if(saveUrl) saveUrl.onclick = async ()=>{
-    const url = document.getElementById('api-url-input').value.trim();
-    if(!url){ showToast('กรุณาวาง URL','error'); return; }
-    await saveConfig(url);
-    await loadAllData();
-  };
-  const clearUrl = document.getElementById('clear-api-url');
-  if(clearUrl) clearUrl.onclick = async ()=>{
-    await saveConfig(null);
-    state.connected = false;
-    await loadAllData();
-  };
+ 
 }
 
 /* ============================================================
