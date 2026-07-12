@@ -306,6 +306,16 @@
     .mobile-toggle{display:flex;}
     .main{padding:16px;}
   }
+  .repeat-badge{
+    display:inline-block;
+    margin-left:8px;
+    padding:2px 8px;
+    font-size:11px;
+    font-weight:600;
+    border-radius:999px;
+    background:#DBEAFE;
+    color:#1D4ED8;
+}
 </style>
 </head>
 <body>
@@ -513,15 +523,37 @@ async function deleteTaskData(id){
 }
 
 async function toggleTaskData(id){
-  const t = state.tasks.find(t=>t.id===id);
+
+  const t = state.tasks.find(t => t.id === id);
+
   if(!t) return;
-  t.completed = !t.completed;
-  render();
+
   if(state.apiUrl && state.connected){
-    await apiCall('toggleTask', {id}, 'POST');
+
+    const res = await apiCall('toggleTask', { id }, 'POST');
+
+    if(res.success){
+
+      t.completed = res.completed;
+
+      if(t.repeat === 'daily'){
+        t.lastCompleted = res.lastCompleted || '';
+      }
+
+      render();
+
+    }
+
   }else{
+
+    t.completed = !t.completed;
+
     await persistDemoTasks();
+
+    render();
+
   }
+
 }
 
 async function createCategory(cat){
@@ -836,10 +868,18 @@ function renderTasksPage(){
           list.map(t=>`
           <tr>
             <td><div class="todo-check ${t.completed?'checked':''}" data-toggle="${t.id}">${t.completed?ICONS.check:''}</div></td>
-            <td class="task-title-cell">
-              <div style="font-weight:600;">${escapeHtml(t.title)}</div>
-              ${t.description?`<div class="desc">${escapeHtml(t.description)}</div>`:''}
-            </td>
+           <td class="task-title-cell">
+  <div style="font-weight:600;">
+    ${escapeHtml(t.title)}
+    ${t.repeat === 'daily'
+      ? '<span class="repeat-badge">🔁 ทุกวัน</span>'
+      : ''}
+  </div>
+
+  ${t.description
+    ? `<div class="desc">${escapeHtml(t.description)}</div>`
+    : ''}
+</td>
             <td>${fmtThaiDate(t.dueDate)}</td>
             <td>${t.startTime||'-'}${t.endTime?' - '+t.endTime:''}</td>
             <td><span class="prio-dot"><span class="dot ${t.priority}"></span>${PRIORITY_LABEL[t.priority]||t.priority}</span></td>
@@ -912,8 +952,19 @@ function renderSettingsPage(){
 ============================================================ */
 function openTaskModal(task){
   state.editingTask = task ? {...task} : {
-    id:null, title:'', description:'', dueDate: state.selectedDate, startTime:'', endTime:'', priority:'medium', category: state.categories[0]?.id || ''
+    id: null,
+    title: '',
+    description: '',
+    dueDate: state.selectedDate,
+    startTime: '',
+    endTime: '',
+    priority: 'medium',
+    category: state.categories[0]?.id || '',
+    repeat: 'none',          // เพิ่ม
+    completed: false,        // แนะนำให้มี
+    lastCompleted: ''        // แนะนำให้มี
   };
+
   renderTaskModal();
 }
 
@@ -949,6 +1000,15 @@ function renderTaskModal(){
             <select id="m-category">${catOptions}</select>
           </div>
         </div>
+
+        <!-- เพิ่มตรงนี้ -->
+        <div class="field">
+          <label>การทำซ้ำ</label>
+          <select id="m-repeat">
+            <option value="none" ${t.repeat==='none'?'selected':''}>ไม่ทำซ้ำ</option>
+            <option value="daily" ${t.repeat==='daily'?'selected':''}>ทุกวัน</option>
+          </select>
+        </div>
         <div class="field">
           <label>ระดับความเร่งด่วน <span class="req">*</span></label>
           <div class="prio-group">
@@ -975,14 +1035,16 @@ function renderTaskModal(){
     if(!title){ showToast('กรุณากรอกชื่องาน','error'); return; }
     if(!dueDate){ showToast('กรุณาเลือกวันที่ครบกำหนด','error'); return; }
     const payload = {
-      ...t,
-      title, dueDate,
-      description: document.getElementById('m-desc').value.trim(),
-      startTime: document.getElementById('m-start').value,
-      endTime: document.getElementById('m-end').value,
-      category: document.getElementById('m-category').value,
-      priority: state.editingTask.priority,
-    };
+  ...t,
+  title,
+  dueDate,
+  description: document.getElementById('m-desc').value.trim(),
+  startTime: document.getElementById('m-start').value,
+  endTime: document.getElementById('m-end').value,
+  category: document.getElementById('m-category').value,
+  priority: state.editingTask.priority,
+  repeat: document.getElementById('m-repeat').value,
+};
     closeModal();
     if(isEdit) await updateTaskData(payload); else await createTask(payload);
   };
