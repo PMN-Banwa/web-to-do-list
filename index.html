@@ -482,14 +482,28 @@ async function persistDemoCategories(){ await storageAdapter.set('demo:categorie
 async function apiCall(action, payload, method){
   try{
     let res;
+
     if(method === 'GET'){
       res = await fetch(state.apiUrl + '?action=' + encodeURIComponent(action));
     }else{
-      res = await fetch(state.apiUrl, { method:'POST', body: JSON.stringify({ action, payload }) });
+      res = await fetch(state.apiUrl,{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({action,payload})
+      });
     }
-    return await res.json();
+
+    console.log("HTTP", res.status);
+
+    const text = await res.text();
+    console.log("Response =", text);
+
+    return JSON.parse(text);
+
   }catch(e){
-    console.error(e);
+    console.error("API ERROR", e);
     return null;
   }
 }
