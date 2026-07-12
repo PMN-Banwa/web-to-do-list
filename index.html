@@ -397,7 +397,7 @@ function uid(){ return 'id_' + Date.now() + '_' + Math.random().toString(36).sli
 ============================================================ */
 const state = {
   view: 'dashboard',
-  apiUrl: null,
+  apiUrl: API_URL,
   connected: false,
   tasks: [],
   categories: [],
@@ -420,7 +420,9 @@ const state = {
    (e.g. GitHub Pages) where window.storage does not exist.
 ============================================================ */
 const hasClaudeStorage = (typeof window !== 'undefined' && !!window.storage && typeof window.storage.get === 'function');
-
+  
+const API_URL = "https://script.google.com/macros/s/AKfycbxxDKkhPRizOtCnXaOjx6MZhUwTwacdAfKfSES5AekSOs2jaP6xj3WWkp-c9DbQPYEy6A/exec";
+  
 const storageAdapter = {
   async get(key){
     if(hasClaudeStorage){
