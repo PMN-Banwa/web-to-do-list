@@ -486,6 +486,9 @@ async function apiCall(action, payload, method){
     if(method === 'GET'){
       res = await fetch(state.apiUrl + '?action=' + encodeURIComponent(action));
     }else{
+      const form = new URLSearchParams();
+form.append("action", action);
+form.append("payload", JSON.stringify(payload));
       res = await fetch(state.apiUrl,{
         method:'POST',
         headers:{
