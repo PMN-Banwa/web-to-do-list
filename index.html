@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To Do List Calendar Notify</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-900:#0c1526;
+    --navy-800:#111d34;
+    --navy-700:#1a2a4a;
+    --navy-600:#233a63;
+    --blue:#3b82f6;
+    --blue-dark:#2563eb;
+    --orange:#f59e0b;
+    --red:#ef4444;
+    --green:#10b981;
+    --green-dark:#059669;
+    --bg:#eef1f8;
+    --card:#ffffff;
+    --text:#1e2536;
+    --muted:#6b7690;
+    --border:#e6e9f2;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  #app, #app *{
+    font-family:'Noto Sans Thai', system-ui, sans-serif;
+    color:var(--text);
+  }
+  #app{
+    display:flex;
+    min-height:100vh;
+    background:var(--bg);
+  }
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#c7cee0;border-radius:8px;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:250px;
+    flex-shrink:0;
+    background:linear-gradient(180deg,var(--navy-800) 0%, var(--navy-900) 100%);
+    padding:22px 16px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:6px 10px 22px;
+  }
+  .brand-icon{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--blue),#6366f1);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .brand-text{line-height:1.25;}
+  .brand-text .t1{color:#fff;font-weight:700;font-size:14.5px;}
+  .brand-text .t2{color:#8b96b8;font-size:11px;letter-spacing:.04em;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 12px;border-radius:10px;
+    color:#aab4d1;font-size:14px;font-weight:500;
+    cursor:pointer;border:none;background:none;width:100%;text-align:left;
+    transition:background .15s, color .15s;
+  }
+  .nav-item svg{flex-shrink:0;opacity:.85;}
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+  .nav-item.active{background:var(--navy-600);color:#fff;}
+  .sidebar-spacer{flex:1;}
+  .upgrade-btn{
+    background:linear-gradient(135deg,var(--blue),#6366f1);
+    color:#fff;border:none;border-radius:10px;
+    padding:12px;font-size:13px;font-weight:600;cursor:pointer;
+    width:100%;
+  }
+
+  /* ---------- Main ---------- */
+  .main{flex:1;min-width:0;padding:22px 26px 40px;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:14px;margin-bottom:20px;
+  }
+  .topbar h1{font-size:19px;margin:0 0 2px;font-weight:800;}
+  .topbar .sub{color:var(--muted);font-size:12.5px;margin:0;}
+  .topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .date-pill{font-size:12.5px;color:var(--blue-dark);font-weight:600;}
+  .badge{
+    display:flex;align-items:center;gap:6px;
+    background:#fff;border:1px solid var(--border);
+    padding:7px 12px;border-radius:999px;font-size:12.5px;font-weight:600;
+  }
+  .badge.orange{color:var(--orange);}
+  .badge.green{color:var(--green-dark);}
+
+  /* ---------- Stat cards ---------- */
+  .stat-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;
+  }
+  .stat-card{
+    border-radius:var(--radius);padding:20px;color:#fff;position:relative;overflow:hidden;
+    min-height:100px;display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .stat-card.blue{background:linear-gradient(135deg,#3b82f6,#6366f1);}
+  .stat-card.orange{background:linear-gradient(135deg,#f59e0b,#ef4444);}
+  .stat-card.green{background:linear-gradient(135deg,#10b981,#059669);}
+  .stat-top{display:flex;align-items:flex-start;justify-content:space-between;}
+  .stat-icon{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;}
+  .stat-num{font-size:30px;font-weight:800;margin-top:10px;}
+  .stat-label{font-size:13px;font-weight:600;opacity:.95;}
+  .stat-desc{font-size:11px;opacity:.8;}
+
+  /* ---------- Content grid ---------- */
+  .content-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;}
+  @media (max-width:920px){.content-grid{grid-template-columns:1fr;} .stat-grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);}
+  .card-pad{padding:18px;}
+
+  /* Calendar */
+  .cal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+  .cal-nav{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;}
+  .icon-btn{
+    width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);
+  }
+  .icon-btn:hover{background:#f4f6fb;}
+  .cal-actions{display:flex;gap:8px;}
+  .btn{
+    border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-light{background:#f1f4fa;color:var(--text);}
+  .btn-light:hover{background:#e6eaf3;}
+  .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;}
+  .btn-primary:hover{filter:brightness(1.05);}
+  .btn-danger{background:#fee2e2;color:#dc2626;}
+  .btn-ghost{background:transparent;color:var(--muted);}
+
+  .cal-grid{padding:14px 18px 20px;}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .cal-dow div{padding:6px 0;}
+  .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-cell{
+    min-height:74px;border-radius:9px;padding:6px;font-size:12px;
+    border:1px solid transparent;cursor:pointer;position:relative;
+    display:flex;flex-direction:column;gap:3px;
+  }
+  .cal-cell.out{color:#c3cadf;}
+  .cal-cell:hover{background:#f4f6fb;}
+  .cal-cell.selected{border-color:var(--blue);background:#eef4ff;}
+  .cal-daynum{
+    width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;font-weight:700;font-size:12px;
+  }
+  .cal-cell.today .cal-daynum{background:var(--blue);color:#fff;}
+  .cal-chip{
+    font-size:9.5px;padding:2px 5px;border-radius:5px;background:#eef1fa;color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;
+  }
+  .cal-more{font-size:9px;color:var(--muted);}
+
+  /* Today's task panel */
+  .todo-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px;}
+  .todo-header .title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;}
+  .todo-date{font-size:11.5px;color:var(--muted);background:#f1f4fa;padding:5px 10px;border-radius:999px;font-weight:600;}
+  .todo-list{padding:0 12px 14px;display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto;}
+  .todo-item{
+    display:flex;gap:10px;padding:11px;border-radius:10px;border:1px solid var(--border);
+    background:#fbfcfe;
+  }
+  .todo-item.done{opacity:.55;}
+  .todo-item.done .todo-title{text-decoration:line-through;}
+  .todo-check{
+    width:19px;height:19px;border-radius:6px;border:2px solid #cbd3e6;flex-shrink:0;margin-top:2px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;background:#fff;
+  }
+  .todo-check.checked{background:var(--green);border-color:var(--green);}
+  .todo-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+  .todo-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .todo-time{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px;}
+  .cat-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .empty-note{color:var(--muted);font-size:12.5px;padding:20px 16px;text-align:center;}
+
+  /* ---------- Tasks table page ---------- */
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .page-header h2{margin:0 0 2px;font-size:17px;}
+  .page-header p{margin:0;color:var(--muted);font-size:12.5px;}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;padding:16px;border-bottom:1px solid var(--border);}
+  .filters select, .filters input[type=date]{
+    border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;background:#fff;color:var(--text);
+  }
+  .search-box{flex:1;min-width:200px;position:relative;}
+  .search-box input{
+    width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px 8px 32px;font-size:12.5px;
+  }
+  .search-box svg{position:absolute;left:9px;top:9px;color:var(--muted);}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{
+    text-align:left;padding:11px 14px;color:var(--muted);font-weight:700;font-size:11.5px;
+    border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tbody tr:hover{background:#f9fafd;}
+  .prio-dot{display:inline-flex;align-items:center;gap:6px;font-weight:600;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .dot.low{background:var(--green);} .dot.medium{background:var(--orange);} .dot.high{background:var(--red);}
+  .row-actions{display:flex;gap:6px;}
+  .row-actions button{
+    width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:var(--muted);
+  }
+  .row-actions button:hover{background:#f1f4fa;}
+  .row-actions button.del:hover{background:#fee2e2;color:#dc2626;}
+  .table-wrap{overflow-x:auto;}
+  .task-title-cell .desc{color:var(--muted);font-size:11px;margin-top:2px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* ---------- Settings ---------- */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:820px){.settings-grid{grid-template-columns:1fr;}}
+  .section-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;padding:16px 18px 4px;}
+  .section-desc{color:var(--muted);font-size:12px;padding:0 18px 12px;}
+  .cat-row{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 14px 8px;
+    border:1px solid var(--border);border-radius:10px;
+  }
+  .color-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+  .cat-name{flex:1;font-weight:600;font-size:13px;}
+  .cat-count{font-size:11px;color:var(--muted);}
+  .cat-actions{display:flex;gap:6px;}
+  .add-cat-row{display:flex;gap:8px;padding:10px 14px 16px;flex-wrap:wrap;}
+  .add-cat-row input[type=text]{flex:1;min-width:120px;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:12.5px;}
+  .add-cat-row input[type=color]{width:38px;height:38px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer;}
+
+  .conn-status{display:flex;align-items:center;gap:8px;padding:0 18px 12px;font-size:12.5px;font-weight:600;}
+  .conn-dot{width:8px;height:8px;border-radius:50%;}
+  .conn-dot.on{background:var(--green);} .conn-dot.off{background:var(--orange);}
+  .form-row{padding:0 18px 14px;}
+  .form-row label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+  .form-row input[type=text]{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12.5px;}
+  .form-actions{display:flex;gap:8px;padding:0 18px 18px;}
+  .setup-steps{padding:0 18px 18px;font-size:12px;color:var(--muted);line-height:1.8;}
+  .setup-steps b{color:var(--text);}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(15,20,35,.55);display:flex;align-items:center;justify-content:center;
+    z-index:1000;padding:16px;
+  }
+  .modal-box{
+    background:#fff;border-radius:16px;width:480px;max-width:100%;max-height:90vh;overflow:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal-head{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+    background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;
+    border-radius:16px 16px 0 0;
+  }
+  .modal-head .mh-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;}
+  .modal-head button{background:rgba(255,255,255,.2);border:none;color:#fff;width:26px;height:26px;border-radius:7px;cursor:pointer;}
+  .modal-body{padding:18px 20px 6px;display:flex;flex-direction:column;gap:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;}
+  .field label .req{color:var(--red);}
+  .field input[type=text], .field textarea, .field select, .field input[type=date], .field input[type=time]{
+    width:100%;border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;font-family:inherit;
+  }
+  .field textarea{resize:vertical;min-height:60px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .prio-group{display:flex;gap:8px;}
+  .prio-btn{
+    flex:1;border:1.5px solid var(--border);background:#fff;border-radius:9px;padding:9px;font-size:12.5px;font-weight:700;
+    cursor:pointer;color:var(--muted);
+  }
+  .prio-btn[data-p=low].active{background:#dcfce7;border-color:var(--green);color:#15803d;}
+  .prio-btn[data-p=medium].active{background:#ffedd5;border-color:var(--orange);color:#c2410c;}
+  .prio-btn[data-p=high].active{background:#fee2e2;border-color:var(--red);color:#b91c1c;}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 20px 20px;}
+
+  /* toast */
+  #toast-root{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;}
+  .toast{
+    background:var(--navy-800);color:#fff;padding:12px 16px;border-radius:10px;font-size:12.5px;font-weight:600;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);animation:slidein .2s ease;max-width:300px;
+  }
+  .toast.error{background:#b91c1c;}
+  .toast.success{background:#15803d;}
+  @keyframes slidein{from{transform:translateY(10px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+  /* confirm modal */
+  .confirm-box{background:#fff;border-radius:14px;width:320px;max-width:100%;padding:20px;text-align:center;}
+  .confirm-box p{font-size:13.5px;color:var(--text);margin:10px 0 18px;}
+  .confirm-actions{display:flex;gap:10px;}
+  .confirm-actions button{flex:1;}
+
+  .mobile-toggle{display:none;}
+  @media (max-width:760px){
+    .sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:900;transition:left .2s;box-shadow:0 0 40px rgba(0,0,0,.3);}
+    .sidebar.open{left:0;}
+    .mobile-toggle{display:flex;}
+    .main{padding:16px;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* ============================================================
+   ICONS
+============================================================ */
+const ICONS = {
+  calendar:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v4M16 3v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  box:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 8l-9-5-9 5 9 5 9-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 8v8l9 5 9-5V8M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  gear:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  plus:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+  chevL:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  chevR:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  clock:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  close:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
+  edit:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  trash:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  search:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  check:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  today:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="14" r="2.4" fill="currentColor"/></svg>`,
+  menu:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  cloud:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.5 19H7a4.5 4.5 0 01-.5-8.98A6 6 0 0118 9.5a3.5 3.5 0 01-.5 9.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+};
+
+/* ============================================================
+   CONSTANTS
+============================================================ */
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const THAI_DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+const PRIORITY_LABEL = { low:'ต่ำ', medium:'ปานกลาง', high:'สูง' };
+
+function pad(n){return String(n).padStart(2,'0');}
+function toISODate(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function fromISODate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function fmtThaiDate(iso){
+  if(!iso) return '-';
+  const d = fromISODate(iso);
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+function uid(){ return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+/* ============================================================
+   STATE
+============================================================ */
+const state = {
+  view: 'dashboard',
+  apiUrl: null,
+  connected: false,
+  tasks: [],
+  categories: [],
+  calYear: new Date().getFullYear(),
+  calMonth: new Date().getMonth(),
+  selectedDate: toISODate(new Date()),
+  loading: true,
+  sidebarOpen: false,
+  // task table filters
+  tf: { date:'', status:'all', priority:'all', category:'all', sort:'newest', q:'' },
+  editingTask: null,
+  editingCategory: null,
+};
+
+/* ============================================================
+   STORAGE / DATA LAYER
+============================================================ */
+async function loadConfig(){
+  try{
+    const r = await window.storage.get('config:apiUrl', false);
+    state.apiUrl = r ? r.value : null;
+  }catch(e){ state.apiUrl = null; }
+}
+async function saveConfig(url){
+  state.apiUrl = url || null;
+  await window.storage.set('config:apiUrl', state.apiUrl || '', false);
+}
+
+async function loadDemo(){
+  let tasks = [], categories = [];
+  try{ const r = await window.storage.get('demo:tasks', false); tasks = r ? JSON.parse(r.value) : []; }catch(e){ tasks = []; }
+  try{ const r = await window.storage.get('demo:categories', false); categories = r ? JSON.parse(r.value) : []; }catch(e){ categories = []; }
+
+  if(categories.length === 0){
+    categories = [
+      { id:'work', name:'Work', color:'#3b82f6' },
+      { id:'personal', name:'Personal', color:'#10b981' },
+      { id:'urgent', name:'Urgent', color:'#ef4444' },
+      { id:'shopping', name:'Shopping', color:'#f59e0b' },
+    ];
+    await window.storage.set('demo:categories', JSON.stringify(categories), false);
+  }
+  if(tasks.length === 0){
+    const today = toISODate(new Date());
+    const tmr = new Date(); tmr.setDate(tmr.getDate()+1);
+    tasks = [
+      { id: uid(), title:'ส่งงานกิจกรรมรายเดือน', description:'1. รวบรวมข้อมูลกิจกรรมเดือนนี้\n2. บันทึกสรุปที่ใช้', dueDate: today, startTime:'09:30', endTime:'22:30', priority:'medium', category:'work', completed:false, createdAt:new Date().toISOString() },
+      { id: uid(), title:'ทำงาน', description:'', dueDate: today, startTime:'21:07', endTime:'', priority:'medium', category:'shopping', completed:false, createdAt:new Date().toISOString() },
+      { id: uid(), title:'เตรียมแผนงานพรุ่งนี้', description:'', dueDate: toISODate(tmr), startTime:'10:00', endTime:'', priority:'low', category:'work', completed:false, createdAt:new Date().toISOString() },
+    ];
+    await window.storage.set('demo:tasks', JSON.stringify(tasks), false);
+  }
+  state.tasks = tasks;
+  state.categories = categories;
+}
+
+async function persistDemoTasks(){ await window.storage.set('demo:tasks', JSON.stringify(state.tasks), false); }
+async function persistDemoCategories(){ await window.storage.set('demo:categories', JSON.stringify(state.categories), false); }
+
+async function apiCall(action, payload, method){
+  try{
+    let res;
+    if(method === 'GET'){
+      res = await fetch(state.apiUrl + '?action=' + encodeURIComponent(action));
+    }else{
+      res = await fetch(state.apiUrl, { method:'POST', body: JSON.stringify({ action, payload }) });
+    }
+    return await res.json();
+  }catch(e){
+    console.error(e);
+    return null;
+  }
+}
+
+async function loadAllData(){
+  state.loading = true; render();
+  if(state.apiUrl){
+    const data = await apiCall('getAll', null, 'GET');
+    if(data && data.tasks){
+      state.tasks = data.tasks.map(t => ({...t, completed: t.completed === true || t.completed === 'TRUE' || t.completed === 'true'}));
+      state.categories = data.categories || [];
+      state.connected = true;
+    }else{
+      state.connected = false;
+      showToast('เชื่อมต่อ Google Sheets ไม่สำเร็จ ตรวจสอบ URL อีกครั้ง', 'error');
+      await loadDemo();
+    }
+  }else{
+    state.connected = false;
+    await loadDemo();
+  }
+  state.loading = false;
+  render();
+}
+
+async function createTask(task){
+  if(state.apiUrl && state.connected){
+    const r = await apiCall('addTask', task, 'POST');
+    if(r && r.success){ task.id = r.id; task.completed=false; task.createdAt = new Date().toISOString(); state.tasks.push(task); showToast('บันทึกรายการแล้ว','success'); }
+    else showToast('บันทึกไม่สำเร็จ','error');
+  }else{
+    task.id = uid(); task.completed=false; task.createdAt = new Date().toISOString();
+    state.tasks.push(task);
+    await persistDemoTasks();
+    showToast('บันทึกรายการแล้ว (โหมดทดลอง)','success');
+  }
+  render();
+}
+
+async function updateTaskData(task){
+  if(state.apiUrl && state.connected){
+    const r = await apiCall('updateTask', task, 'POST');
+    if(!r || !r.success){ showToast('อัปเดตไม่สำเร็จ','error'); return; }
+  }
+  const idx = state.tasks.findIndex(t=>t.id===task.id);
+  if(idx>-1) state.tasks[idx] = task;
+  if(!state.apiUrl || !state.connected) await persistDemoTasks();
+  showToast('อัปเดตรายการแล้ว','success');
+  render();
+}
+
+async function deleteTaskData(id){
+  if(state.apiUrl && state.connected){
+    const r = await apiCall('deleteTask', {id}, 'POST');
+    if(!r || !r.success){ showToast('ลบไม่สำเร็จ','error'); return; }
+  }
+  state.tasks = state.tasks.filter(t=>t.id!==id);
+  if(!state.apiUrl || !state.connected) await persistDemoTasks();
+  showToast('ลบรายการแล้ว','success');
+  render();
+}
+
+async function toggleTaskData(id){
+  const t = state.tasks.find(t=>t.id===id);
+  if(!t) return;
+  t.completed = !t.completed;
+  render();
+  if(state.apiUrl && state.connected){
+    await apiCall('toggleTask', {id}, 'POST');
+  }else{
+    await persistDemoTasks();
+  }
+}
+
+async function createCategory(cat){
+  cat.id = uid();
+  if(state.apiUrl && state.connected){
+    const r = await apiCall('addCategory', cat, 'POST');
+    if(!r || !r.success){ showToast('เพิ่มหมวดหมู่ไม่สำเร็จ','error'); return; }
+    cat.id = r.id;
+  }
+  state.categories.push(cat);
+  if(!state.apiUrl || !state.connected) await persistDemoCategories();
+  showToast('เพิ่มหมวดหมู่แล้ว','success');
+  render();
+}
+
+async function updateCategoryData(cat){
+  if(state.apiUrl && state.connected){
+    const r = await apiCall('updateCategory', cat, 'POST');
+    if(!r || !r.success){ showToast('อัปเดตไม่สำเร็จ','error'); return; }
+  }
+  const idx = state.categories.findIndex(c=>c.id===cat.id);
+  if(idx>-1) state.categories[idx] = cat;
+  if(!state.apiUrl || !state.connected) await persistDemoCategories();
+  showToast('อัปเดตหมวดหมู่แล้ว','success');
+  render();
+}
+
+async function deleteCategoryData(id){
+  if(state.apiUrl && state.connected){
+    const r = await apiCall('deleteCategory', {id}, 'POST');
+    if(!r || !r.success){ showToast('ลบไม่สำเร็จ','error'); return; }
+  }
+  state.categories = state.categories.filter(c=>c.id!==id);
+  if(!state.apiUrl || !state.connected) await persistDemoCategories();
+  showToast('ลบหมวดหมู่แล้ว','success');
+  render();
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+function showToast(msg, type=''){
+  const root = document.getElementById('toast-root');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  root.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 2600);
+}
+
+/* ============================================================
+   CONFIRM MODAL
+============================================================ */
+function showConfirm(message, onYes){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay" id="confirm-overlay">
+      <div class="confirm-box">
+        <div style="font-weight:800;font-size:15px;">ยืนยันการลบ</div>
+        <p>${message}</p>
+        <div class="confirm-actions">
+          <button class="btn btn-light" id="confirm-no" style="flex:1;">ยกเลิก</button>
+          <button class="btn btn-danger" id="confirm-yes" style="flex:1;">ลบเลย</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('confirm-overlay').addEventListener('click', e=>{ if(e.target.id==='confirm-overlay') closeModal(); });
+  document.getElementById('confirm-no').onclick = closeModal;
+  document.getElementById('confirm-yes').onclick = ()=>{ closeModal(); onYes(); };
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+
+/* ============================================================
+   CATEGORY HELPERS
+============================================================ */
+function catById(id){ return state.categories.find(c=>c.id===id); }
+function catName(id){ const c = catById(id); return c ? c.name : (id || '-'); }
+function catColor(id){ const c = catById(id); return c ? c.color : '#94a3b8'; }
+function catTaskCount(id){ return state.tasks.filter(t=>t.category===id).length; }
+
+/* ============================================================
+   RENDER: ROOT
+============================================================ */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    ${renderSidebar()}
+    <main class="main">
+      ${renderTopbar()}
+      ${state.loading ? '<div style="padding:60px;text-align:center;color:#94a3b8;">กำลังโหลดข้อมูล...</div>' :
+        state.view==='dashboard' ? renderDashboard() :
+        state.view==='tasks' ? renderTasksPage() :
+        renderSettingsPage()}
+    </main>
+  `;
+  attachEvents();
+}
+
+function renderSidebar(){
+  const items = [
+    {key:'dashboard', label:'แดชบอร์ด', icon:ICONS.calendar},
+    {key:'tasks', label:'คลังการกิจทั้งหมด', icon:ICONS.box},
+    {key:'settings', label:'ตั้งค่าระบบ', icon:ICONS.gear},
+  ];
+  return `
+  <aside class="sidebar ${state.sidebarOpen?'open':''}">
+    <div class="brand">
+      <div class="brand-icon">${ICONS.calendar.replace('currentColor','#fff')}</div>
+      <div class="brand-text">
+        <div class="t1">To Do List Calendar</div>
+        <div class="t2">Notify · LINE REMINDER SYSTEM</div>
+      </div>
+    </div>
+    ${items.map(it=>`
+      <button class="nav-item ${state.view===it.key?'active':''}" data-nav="${it.key}">
+        ${it.icon} ${it.label}
+      </button>`).join('')}
+    <div class="sidebar-spacer"></div>
+    <button class="upgrade-btn" id="upgrade-btn">Upgrade Pro Version</button>
+  </aside>`;
+}
+
+function renderTopbar(){
+  const today = new Date();
+  const todayStr = `${today.getDate()} ${THAI_MONTHS[today.getMonth()]} ${today.getFullYear()+543}`;
+  const pending = state.tasks.filter(t=>!t.completed).length;
+  const done = state.tasks.filter(t=>t.completed).length;
+  const titles = { dashboard:['Dashboard ภาพรวมงาน','อัปเดต งานที่ต้องทำ'], tasks:['คลังการกิจทั้งหมด','สืบค้นตารางงาน ค้นหาและจัดการงานย้อนหลังในระบบ'], settings:['ตั้งค่าระบบ','ปรับแต่งหมวดหมู่การกิจและการเชื่อมต่อข้อมูล'] };
+  const [t1,t2] = titles[state.view];
+  return `
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="icon-btn mobile-toggle" id="mobile-toggle">${ICONS.menu}</button>
+      <div>
+        <h1>${t1}</h1>
+        <p class="sub">${t2}</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="date-pill">แผนประจำวันที่ วัน${['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'][today.getDay()]}ที่ ${todayStr}</span>
+      <span class="badge orange">${ICONS.clock} รอดำเนินการ ${pending}</span>
+      <span class="badge green">${ICONS.check.replace('#fff','currentColor')} เสร็จแล้ว ${done}</span>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   RENDER: DASHBOARD
+============================================================ */
+function renderDashboard(){
+  const todayISO = toISODate(new Date());
+  const todayTasks = state.tasks.filter(t=>t.dueDate===todayISO);
+  const pendingToday = todayTasks.filter(t=>!t.completed).length;
+  const pendingAll = state.tasks.filter(t=>!t.completed).length;
+  const doneAll = state.tasks.filter(t=>t.completed).length;
+
+  return `
+  <div class="stat-grid">
+    <div class="stat-card blue">
+      <div class="stat-top"><div class="stat-icon">${ICONS.calendar.replace(/currentColor/g,'#fff')}</div></div>
+      <div><div class="stat-num">${todayTasks.length}</div><div class="stat-label">งานวันนี้</div><div class="stat-desc">รายการที่กำหนดวันนี้</div></div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-top"><div class="stat-icon">${ICONS.clock.replace(/currentColor/g,'#fff')}</div></div>
+      <div><div class="stat-num">${pendingAll}</div><div class="stat-label">รอดำเนินการ</div><div class="stat-desc">งานที่ยังไม่เสร็จ</div></div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-top"><div class="stat-icon">${ICONS.check.replace(/#fff/g,'#fff')}</div></div>
+      <div><div class="stat-num">${doneAll}</div><div class="stat-label">เสร็จแล้ว</div><div class="stat-desc">งานที่เสร็จเรียบร้อย</div></div>
+    </div>
+  </div>
+  <div class="content-grid">
+    ${renderCalendarCard()}
+    ${renderTodayPanel()}
+  </div>`;
+}
+
+function renderCalendarCard(){
+  const y = state.calYear, m = state.calMonth;
+  const first = new Date(y,m,1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const daysInPrevMonth = new Date(y,m,0).getDate();
+  const todayISO = toISODate(new Date());
+
+  let cells = [];
+  for(let i=startDow-1;i>=0;i--) cells.push({d: daysInPrevMonth-i, out:true, iso:null});
+  for(let d=1; d<=daysInMonth; d++) cells.push({d, out:false, iso: `${y}-${pad(m+1)}-${pad(d)}`});
+  while(cells.length % 7 !== 0) cells.push({d: cells.length, out:true, iso:null});
+
+  const cellsHtml = cells.map(c=>{
+    if(c.out) return `<div class="cal-cell out"><div class="cal-daynum">${c.d}</div></div>`;
+    const dayTasks = state.tasks.filter(t=>t.dueDate===c.iso);
+    const isToday = c.iso === todayISO;
+    const isSel = c.iso === state.selectedDate;
+    const chips = dayTasks.slice(0,2).map(t=>{
+      const color = catColor(t.category);
+      return `<div class="cal-chip" style="background:${color}22;color:${color};">${escapeHtml(t.title)}</div>`;
+    }).join('');
+    const more = dayTasks.length>2 ? `<div class="cal-more">+${dayTasks.length-2} รายการ</div>` : '';
+    return `<div class="cal-cell ${isToday?'today':''} ${isSel?'selected':''}" data-date="${c.iso}">
+      <div class="cal-daynum">${c.d}</div>${chips}${more}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <div class="cal-header">
+      <div class="cal-nav">
+        <button class="icon-btn" id="cal-prev">${ICONS.chevL}</button>
+        <span>${THAI_MONTHS[m]} ${y+543}</span>
+        <button class="icon-btn" id="cal-next">${ICONS.chevR}</button>
+      </div>
+      <div class="cal-actions">
+        <button class="btn btn-light" id="cal-today">${ICONS.today} กลับวันนี้</button>
+        <button class="btn btn-primary" id="open-add-task">${ICONS.plus} เพิ่มงานใหม่</button>
+      </div>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-dow">${THAI_DOW.map(d=>`<div>${d}</div>`).join('')}</div>
+      <div class="cal-days">${cellsHtml}</div>
+    </div>
+  </div>`;
+}
+
+function renderTodayPanel(){
+  const dayTasks = state.tasks.filter(t=>t.dueDate===state.selectedDate).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+  const d = fromISODate(state.selectedDate);
+  const label = `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
+  return `
+  <div class="card">
+    <div class="todo-header">
+      <div class="title">${ICONS.calendar} งานที่เลือกวันนี้</div>
+      <div class="todo-date">${label}</div>
+    </div>
+    <div class="todo-list">
+      ${dayTasks.length===0 ? `<div class="empty-note">ไม่มีงานในวันนี้<br>กด "+ เพิ่มงานใหม่" เพื่อสร้างรายการ</div>` :
+        dayTasks.map(t=>`
+        <div class="todo-item ${t.completed?'done':''}">
+          <div class="todo-check ${t.completed?'checked':''}" data-toggle="${t.id}">${t.completed?ICONS.check:''}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="todo-title">${escapeHtml(t.title)}</div>
+            <div class="todo-meta">
+              ${t.startTime ? `<span class="todo-time">${ICONS.clock} ${t.startTime}${t.endTime?' - '+t.endTime:''}</span>`:''}
+              <span class="cat-pill" style="background:${catColor(t.category)}22;color:${catColor(t.category)};">${escapeHtml(catName(t.category))}</span>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   RENDER: TASKS PAGE
+============================================================ */
+function getFilteredTasks(){
+  let list = [...state.tasks];
+  const f = state.tf;
+  if(f.date) list = list.filter(t=>t.dueDate===f.date);
+  if(f.status==='pending') list = list.filter(t=>!t.completed);
+  if(f.status==='done') list = list.filter(t=>t.completed);
+  if(f.priority!=='all') list = list.filter(t=>t.priority===f.priority);
+  if(f.category!=='all') list = list.filter(t=>t.category===f.category);
+  if(f.q) list = list.filter(t=> (t.title||'').toLowerCase().includes(f.q.toLowerCase()) || (t.description||'').toLowerCase().includes(f.q.toLowerCase()));
+
+  if(f.sort==='newest') list.sort((a,b)=> new Date(b.createdAt||0) - new Date(a.createdAt||0));
+  else if(f.sort==='due') list.sort((a,b)=> (a.dueDate||'').localeCompare(b.dueDate||''));
+  else if(f.sort==='priority'){ const order={high:0,medium:1,low:2}; list.sort((a,b)=> order[a.priority]-order[b.priority]); }
+  return list;
+}
+
+function renderTasksPage(){
+  const list = getFilteredTasks();
+  const catOptions = state.categories.map(c=>`<option value="${c.id}" ${state.tf.category===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  return `
+  <div class="page-header">
+    <div><h2>คลังการกิจทั้งหมด</h2><p>สืบค้นตารางงาน ค้นหาและจัดการงานย้อนหลังในระบบ (${list.length} รายการ)</p></div>
+    <button class="btn btn-primary" id="open-add-task">${ICONS.plus} เพิ่มงานใหม่</button>
+  </div>
+  <div class="card">
+    <div class="filters">
+      <input type="date" id="f-date" value="${state.tf.date}">
+      <select id="f-status">
+        <option value="all" ${state.tf.status==='all'?'selected':''}>ทุกสถานะการทำ</option>
+        <option value="pending" ${state.tf.status==='pending'?'selected':''}>ยังไม่เสร็จ</option>
+        <option value="done" ${state.tf.status==='done'?'selected':''}>เสร็จแล้ว</option>
+      </select>
+      <select id="f-priority">
+        <option value="all" ${state.tf.priority==='all'?'selected':''}>ทุกระดับความสำคัญ</option>
+        <option value="low" ${state.tf.priority==='low'?'selected':''}>ต่ำ</option>
+        <option value="medium" ${state.tf.priority==='medium'?'selected':''}>ปานกลาง</option>
+        <option value="high" ${state.tf.priority==='high'?'selected':''}>สูง</option>
+      </select>
+      <select id="f-category">
+        <option value="all" ${state.tf.category==='all'?'selected':''}>ทุกหมวดหมู่</option>
+        ${catOptions}
+      </select>
+      <select id="f-sort">
+        <option value="newest" ${state.tf.sort==='newest'?'selected':''}>เรียงล่าสุด</option>
+        <option value="due" ${state.tf.sort==='due'?'selected':''}>ใกล้ครบกำหนด</option>
+        <option value="priority" ${state.tf.sort==='priority'?'selected':''}>ตามความสำคัญ</option>
+      </select>
+      <div class="search-box">${ICONS.search}<input type="text" id="f-search" placeholder="ค้นหางานด้วยชื่องาน หรือรายละเอียด..." value="${escapeHtml(state.tf.q)}"></div>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th></th><th>ชื่อกิจกรรม / งาน</th><th>วันที่ดำเนินการ</th><th>เวลา</th><th>ระดับความเร่งด่วน</th><th>หมวดหมู่</th><th>จัดการ</th>
+      </tr></thead>
+      <tbody>
+        ${list.length===0 ? `<tr><td colspan="7" style="text-align:center;padding:40px;color:#94a3b8;">ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>` :
+          list.map(t=>`
+          <tr>
+            <td><div class="todo-check ${t.completed?'checked':''}" data-toggle="${t.id}">${t.completed?ICONS.check:''}</div></td>
+            <td class="task-title-cell">
+              <div style="font-weight:600;">${escapeHtml(t.title)}</div>
+              ${t.description?`<div class="desc">${escapeHtml(t.description)}</div>`:''}
+            </td>
+            <td>${fmtThaiDate(t.dueDate)}</td>
+            <td>${t.startTime||'-'}${t.endTime?' - '+t.endTime:''}</td>
+            <td><span class="prio-dot"><span class="dot ${t.priority}"></span>${PRIORITY_LABEL[t.priority]||t.priority}</span></td>
+            <td><span class="cat-pill" style="background:${catColor(t.category)}22;color:${catColor(t.category)};">${escapeHtml(catName(t.category))}</span></td>
+            <td><div class="row-actions">
+              <button data-edit="${t.id}">${ICONS.edit}</button>
+              <button class="del" data-del="${t.id}">${ICONS.trash}</button>
+            </div></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   RENDER: SETTINGS PAGE
+============================================================ */
+function renderSettingsPage(){
+  return `
+  <div class="settings-grid">
+    <div class="card">
+      <div class="section-title">${ICONS.box} จัดการหมวดหมู่การกิจ</div>
+      <div class="section-desc">ปรับแต่งหมวดหมู่สำหรับจัดกลุ่มและแยกแยะแต่ละงาน</div>
+      ${state.categories.map(c=>`
+        <div class="cat-row">
+          <span class="color-dot" style="background:${c.color};"></span>
+          <span class="cat-name">${escapeHtml(c.name)}</span>
+          <span class="cat-count">(ใช้อยู่ ${catTaskCount(c.id)} งาน)</span>
+          <div class="cat-actions">
+            <button class="icon-btn" data-edit-cat="${c.id}">${ICONS.edit}</button>
+            <button class="icon-btn" data-del-cat="${c.id}">${ICONS.trash}</button>
+          </div>
+        </div>`).join('')}
+      <div class="add-cat-row">
+        <input type="color" id="new-cat-color" value="#3b82f6">
+        <input type="text" id="new-cat-name" placeholder="ชื่อหมวดหมู่ใหม่...">
+        <button class="btn btn-primary" id="add-cat-btn">${ICONS.plus} เพิ่มหมวด</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">${ICONS.cloud} เชื่อมต่อ Google Sheets</div>
+      <div class="section-desc">วาง URL ของ Google Apps Script Web App ที่ deploy ไว้ เพื่อให้ข้อมูลถูกบันทึกลง Google Sheets จริง</div>
+      <div class="conn-status">
+        <span class="conn-dot ${state.connected?'on':'off'}"></span>
+        ${state.connected ? 'เชื่อมต่อ Google Sheets สำเร็จ' : (state.apiUrl ? 'เชื่อมต่อไม่สำเร็จ กำลังใช้โหมดทดลอง (ข้อมูลเก็บในเบราว์เซอร์)' : 'ยังไม่ได้เชื่อมต่อ กำลังใช้โหมดทดลอง (ข้อมูลเก็บในเบราว์เซอร์)')}
+      </div>
+      <div class="form-row">
+        <label>Google Apps Script Web App URL</label>
+        <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/AKfycbxxDKkhPRizOtCnXaOjx6MZhUwTwacdAfKfSES5AekSOs2jaP6xj3WWkp-c9DbQPYEy6A/exec" value="${escapeHtml(state.apiUrl||'')}">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="save-api-url">บันทึกและเชื่อมต่อ</button>
+        ${state.apiUrl ? `<button class="btn btn-light" id="clear-api-url">ยกเลิกการเชื่อมต่อ</button>`:''}
+      </div>
+      <div class="setup-steps">
+        <b>วิธีตั้งค่า:</b><br>
+        1. เปิดไฟล์ <b>GoogleAppsScript_Code.gs</b> ที่ให้ไว้<br>
+        2. สร้าง Google Sheet ใหม่ → เมนู ส่วนขยาย → Apps Script<br>
+        3. วางโค้ดทั้งหมด แล้วกด Deploy → New deployment → Web app (Execute as: Me, Access: Anyone)<br>
+        4. คัดลอก URL ที่ได้มาวางในช่องด้านบน แล้วกด "บันทึกและเชื่อมต่อ"
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   MODAL: ADD / EDIT TASK
+============================================================ */
+function openTaskModal(task){
+  state.editingTask = task ? {...task} : {
+    id:null, title:'', description:'', dueDate: state.selectedDate, startTime:'', endTime:'', priority:'medium', category: state.categories[0]?.id || ''
+  };
+  renderTaskModal();
+}
+
+function renderTaskModal(){
+  const t = state.editingTask;
+  const isEdit = !!t.id;
+  const catOptions = state.categories.map(c=>`<option value="${c.id}" ${t.category===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+  <div class="modal-overlay" id="task-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="mh-title">${ICONS.plus.replace(/currentColor/g,'#fff')} ${isEdit?'แก้ไขงาน':'สร้างงานใหม่'}</div>
+        <button id="close-task-modal">${ICONS.close}</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>ชื่องาน / กิจกรรมสำคัญ <span class="req">*</span></label>
+          <input type="text" id="m-title" value="${escapeHtml(t.title)}" placeholder="เช่น ส่งงานกิจกรรมรายเดือน">
+        </div>
+        <div class="field">
+          <label>คำอธิบายเพิ่มเติม</label>
+          <textarea id="m-desc" placeholder="รายละเอียดเพิ่มเติม...">${escapeHtml(t.description||'')}</textarea>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>วันที่ครบกำหนด <span class="req">*</span></label><input type="date" id="m-date" value="${t.dueDate}"></div>
+          <div class="field"><label>เวลาที่เริ่ม</label><input type="time" id="m-start" value="${t.startTime||''}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>เวลาที่เสร็จ</label><input type="time" id="m-end" value="${t.endTime||''}"></div>
+          <div class="field">
+            <label>หมวดหมู่การกิจ <span class="req">*</span></label>
+            <select id="m-category">${catOptions}</select>
+          </div>
+        </div>
+        <div class="field">
+          <label>ระดับความเร่งด่วน <span class="req">*</span></label>
+          <div class="prio-group">
+            ${['low','medium','high'].map(p=>`<button type="button" class="prio-btn ${t.priority===p?'active':''}" data-p="${p}">${p==='low'?'ต่ำ':p==='medium'?'กลาง':'สูง'}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-light" id="cancel-task">ยกเลิก</button>
+        <button class="btn btn-primary" id="save-task">บันทึกรายการ →</button>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('task-overlay').addEventListener('click', e=>{ if(e.target.id==='task-overlay') closeModal(); });
+  document.getElementById('close-task-modal').onclick = closeModal;
+  document.getElementById('cancel-task').onclick = closeModal;
+  root.querySelectorAll('.prio-btn').forEach(b=>{
+    b.onclick = ()=>{ state.editingTask.priority = b.dataset.p; renderTaskModal(); };
+  });
+  document.getElementById('save-task').onclick = async ()=>{
+    const title = document.getElementById('m-title').value.trim();
+    const dueDate = document.getElementById('m-date').value;
+    if(!title){ showToast('กรุณากรอกชื่องาน','error'); return; }
+    if(!dueDate){ showToast('กรุณาเลือกวันที่ครบกำหนด','error'); return; }
+    const payload = {
+      ...t,
+      title, dueDate,
+      description: document.getElementById('m-desc').value.trim(),
+      startTime: document.getElementById('m-start').value,
+      endTime: document.getElementById('m-end').value,
+      category: document.getElementById('m-category').value,
+      priority: state.editingTask.priority,
+    };
+    closeModal();
+    if(isEdit) await updateTaskData(payload); else await createTask(payload);
+  };
+}
+
+/* ============================================================
+   MODAL: ADD / EDIT CATEGORY
+============================================================ */
+function openCategoryEdit(cat){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+  <div class="modal-overlay" id="cat-overlay">
+    <div class="modal-box" style="width:360px;">
+      <div class="modal-head">
+        <div class="mh-title">${ICONS.edit.replace(/currentColor/g,'#fff')} แก้ไขหมวดหมู่</div>
+        <button id="close-cat-modal">${ICONS.close}</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row" style="grid-template-columns:60px 1fr;">
+          <div class="field"><label>สี</label><input type="color" id="ec-color" value="${cat.color}" style="height:42px;width:100%;padding:2px;border-radius:8px;border:1px solid var(--border);"></div>
+          <div class="field"><label>ชื่อหมวดหมู่</label><input type="text" id="ec-name" value="${escapeHtml(cat.name)}"></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-light" id="cancel-cat">ยกเลิก</button>
+        <button class="btn btn-primary" id="save-cat">บันทึก</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('cat-overlay').addEventListener('click', e=>{ if(e.target.id==='cat-overlay') closeModal(); });
+  document.getElementById('close-cat-modal').onclick = closeModal;
+  document.getElementById('cancel-cat').onclick = closeModal;
+  document.getElementById('save-cat').onclick = async ()=>{
+    const name = document.getElementById('ec-name').value.trim();
+    if(!name){ showToast('กรุณากรอกชื่อหมวดหมู่','error'); return; }
+    const color = document.getElementById('ec-color').value;
+    closeModal();
+    await updateCategoryData({...cat, name, color});
+  };
+}
+
+/* ============================================================
+   EVENTS
+============================================================ */
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function attachEvents(){
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.onclick = ()=>{ state.view = el.dataset.nav; state.sidebarOpen=false; render(); };
+  });
+  const mt = document.getElementById('mobile-toggle');
+  if(mt) mt.onclick = ()=>{ state.sidebarOpen = !state.sidebarOpen; render(); };
+  const ub = document.getElementById('upgrade-btn');
+  if(ub) ub.onclick = ()=> showToast('ฟีเจอร์ Pro Version จะเปิดให้ใช้งานเร็วๆ นี้');
+
+  const openAdd = document.getElementById('open-add-task');
+  if(openAdd) openAdd.onclick = ()=> openTaskModal(null);
+
+  document.querySelectorAll('[data-toggle]').forEach(el=>{
+    el.onclick = ()=> toggleTaskData(el.dataset.toggle);
+  });
+  document.querySelectorAll('[data-edit]').forEach(el=>{
+    el.onclick = ()=>{ const t = state.tasks.find(t=>t.id===el.dataset.edit); if(t) openTaskModal(t); };
+  });
+  document.querySelectorAll('[data-del]').forEach(el=>{
+    el.onclick = ()=>{
+      const t = state.tasks.find(t=>t.id===el.dataset.del);
+      showConfirm(`ต้องการลบงาน "${t?t.title:''}" ใช่หรือไม่?`, ()=> deleteTaskData(el.dataset.del));
+    };
+  });
+
+  // calendar
+  const cp = document.getElementById('cal-prev'), cn = document.getElementById('cal-next'), ct = document.getElementById('cal-today');
+  if(cp) cp.onclick = ()=>{ state.calMonth--; if(state.calMonth<0){state.calMonth=11;state.calYear--;} render(); };
+  if(cn) cn.onclick = ()=>{ state.calMonth++; if(state.calMonth>11){state.calMonth=0;state.calYear++;} render(); };
+  if(ct) ct.onclick = ()=>{ const n=new Date(); state.calYear=n.getFullYear(); state.calMonth=n.getMonth(); state.selectedDate=toISODate(n); render(); };
+  document.querySelectorAll('[data-date]').forEach(el=>{
+    el.onclick = ()=>{ state.selectedDate = el.dataset.date; render(); };
+  });
+
+  // tasks page filters
+  ['f-date','f-status','f-priority','f-category','f-sort','f-search'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const key = {'f-date':'date','f-status':'status','f-priority':'priority','f-category':'category','f-sort':'sort','f-search':'q'}[id];
+    const evt = id==='f-search' ? 'input' : 'change';
+    el.addEventListener(evt, ()=>{ state.tf[key] = el.value; render(); document.getElementById(id).focus(); });
+  });
+
+  // settings: categories
+  const addCatBtn = document.getElementById('add-cat-btn');
+  if(addCatBtn) addCatBtn.onclick = async ()=>{
+    const name = document.getElementById('new-cat-name').value.trim();
+    const color = document.getElementById('new-cat-color').value;
+    if(!name){ showToast('กรุณากรอกชื่อหมวดหมู่','error'); return; }
+    await createCategory({ name, color });
+  };
+  document.querySelectorAll('[data-edit-cat]').forEach(el=>{
+    el.onclick = ()=>{ const c = catById(el.dataset.editCat); if(c) openCategoryEdit(c); };
+  });
+  document.querySelectorAll('[data-del-cat]').forEach(el=>{
+    el.onclick = ()=>{
+      const c = catById(el.dataset.delCat);
+      showConfirm(`ต้องการลบหมวดหมู่ "${c?c.name:''}" ใช่หรือไม่? งานที่ใช้หมวดนี้จะไม่ถูกลบ`, ()=> deleteCategoryData(el.dataset.delCat));
+    };
+  });
+
+  // settings: api url
+  const saveUrl = document.getElementById('save-api-url');
+  if(saveUrl) saveUrl.onclick = async ()=>{
+    const url = document.getElementById('api-url-input').value.trim();
+    if(!url){ showToast('กรุณาวาง URL','error'); return; }
+    await saveConfig(url);
+    await loadAllData();
+  };
+  const clearUrl = document.getElementById('clear-api-url');
+  if(clearUrl) clearUrl.onclick = async ()=>{
+    await saveConfig(null);
+    state.connected = false;
+    await loadAllData();
+  };
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+(async function init(){
+  await loadConfig();
+  await loadAllData();
+})();
+</script>
+</body>
+</html>
