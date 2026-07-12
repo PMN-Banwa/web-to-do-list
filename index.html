@@ -374,22 +374,44 @@ const state = {
 
 /* ============================================================
    STORAGE / DATA LAYER
+   Uses the Claude-artifact window.storage API when available
+   (preview inside Claude.ai). Falls back to plain browser
+   localStorage automatically when the app is deployed standalone
+   (e.g. GitHub Pages) where window.storage does not exist.
 ============================================================ */
+const hasClaudeStorage = (typeof window !== 'undefined' && !!window.storage && typeof window.storage.get === 'function');
+
+const storageAdapter = {
+  async get(key){
+    if(hasClaudeStorage){
+      try{ return await window.storage.get(key, false); }catch(e){ return null; }
+    }
+    try{
+      const v = window.localStorage.getItem(key);
+      return v !== null ? { key, value: v } : null;
+    }catch(e){ return null; }
+  },
+  async set(key, value){
+    if(hasClaudeStorage){
+      try{ return await window.storage.set(key, value, false); }catch(e){ return null; }
+    }
+    try{ window.localStorage.setItem(key, value); return { key, value }; }catch(e){ return null; }
+  }
+};
+
 async function loadConfig(){
-  try{
-    const r = await window.storage.get('config:apiUrl', false);
-    state.apiUrl = r ? r.value : null;
-  }catch(e){ state.apiUrl = null; }
+  const r = await storageAdapter.get('config:apiUrl');
+  state.apiUrl = r ? r.value : null;
 }
 async function saveConfig(url){
   state.apiUrl = url || null;
-  await window.storage.set('config:apiUrl', state.apiUrl || '', false);
+  await storageAdapter.set('config:apiUrl', state.apiUrl || '');
 }
 
 async function loadDemo(){
   let tasks = [], categories = [];
-  try{ const r = await window.storage.get('demo:tasks', false); tasks = r ? JSON.parse(r.value) : []; }catch(e){ tasks = []; }
-  try{ const r = await window.storage.get('demo:categories', false); categories = r ? JSON.parse(r.value) : []; }catch(e){ categories = []; }
+  const rt = await storageAdapter.get('demo:tasks'); try{ tasks = rt ? JSON.parse(rt.value) : []; }catch(e){ tasks = []; }
+  const rc = await storageAdapter.get('demo:categories'); try{ categories = rc ? JSON.parse(rc.value) : []; }catch(e){ categories = []; }
 
   if(categories.length === 0){
     categories = [
@@ -398,7 +420,7 @@ async function loadDemo(){
       { id:'urgent', name:'Urgent', color:'#ef4444' },
       { id:'shopping', name:'Shopping', color:'#f59e0b' },
     ];
-    await window.storage.set('demo:categories', JSON.stringify(categories), false);
+    await storageAdapter.set('demo:categories', JSON.stringify(categories));
   }
   if(tasks.length === 0){
     const today = toISODate(new Date());
@@ -408,14 +430,14 @@ async function loadDemo(){
       { id: uid(), title:'ทำงาน', description:'', dueDate: today, startTime:'21:07', endTime:'', priority:'medium', category:'shopping', completed:false, createdAt:new Date().toISOString() },
       { id: uid(), title:'เตรียมแผนงานพรุ่งนี้', description:'', dueDate: toISODate(tmr), startTime:'10:00', endTime:'', priority:'low', category:'work', completed:false, createdAt:new Date().toISOString() },
     ];
-    await window.storage.set('demo:tasks', JSON.stringify(tasks), false);
+    await storageAdapter.set('demo:tasks', JSON.stringify(tasks));
   }
   state.tasks = tasks;
   state.categories = categories;
 }
 
-async function persistDemoTasks(){ await window.storage.set('demo:tasks', JSON.stringify(state.tasks), false); }
-async function persistDemoCategories(){ await window.storage.set('demo:categories', JSON.stringify(state.categories), false); }
+async function persistDemoTasks(){ await storageAdapter.set('demo:tasks', JSON.stringify(state.tasks)); }
+async function persistDemoCategories(){ await storageAdapter.set('demo:categories', JSON.stringify(state.categories)); }
 
 async function apiCall(action, payload, method){
   try{
@@ -868,7 +890,7 @@ function renderSettingsPage(){
       </div>
       <div class="form-row">
         <label>Google Apps Script Web App URL</label>
-        <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/AKfycbxxDKkhPRizOtCnXaOjx6MZhUwTwacdAfKfSES5AekSOs2jaP6xj3WWkp-c9DbQPYEy6A/exec" value="${escapeHtml(state.apiUrl||'')}">
+        <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/xxxxx/exec" value="${escapeHtml(state.apiUrl||'')}">
       </div>
       <div class="form-actions">
         <button class="btn btn-primary" id="save-api-url">บันทึกและเชื่อมต่อ</button>
